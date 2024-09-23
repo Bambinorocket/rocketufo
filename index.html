@@ -3,252 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rocket to Mars</title>
+    <title>Rocket to Mars Game</title>
     <style>
+        body {
+            margin: 0;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background-color: black; /* Fond noir pour l'espace */
+        }
+
         #rocketContainer {
             position: relative;
-            width: 100%;
+            width: 100vw;
             height: 100vh;
-            background-color: black;
             overflow: hidden;
+            background: linear-gradient(black, darkblue, black); /* Arrière-plan espace */
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            width: 2px;
+            height: 2px;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
         }
 
         .rocket {
             position: absolute;
+            bottom: 0;
             width: 50px;
             height: 100px;
-            background-color: red;
-            bottom: 0;
+            background: linear-gradient(to bottom, red, blue); /* Style original */
+            border-radius: 25px 25px 0 0;
             cursor: pointer;
         }
 
         .flame {
             position: absolute;
-            width: 10px;
-            height: 30px;
-            background-color: orange;
-            bottom: -30px;
-            left: 20px;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 40px;
+            background: orange;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: flicker 0.1s infinite alternate;
         }
 
         .ufo {
             position: absolute;
-            width: 50px;
-            height: 20px;
-            background-color: gray;
+            width: 70px;
+            height: 40px;
+            background-color: grey;
             border-radius: 50%;
-            left: 0;
             cursor: pointer;
+            animation: moveUFO 5s linear infinite;
+            transform: rotate(180deg);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
-        #distance, #fuel, #message, #finalMessage {
+        .ufo::before, .ufo::after {
+            content: '';
             position: absolute;
-            color: white;
-            font-size: 20px;
-        }
-
-        #distance {
             top: 10px;
-            left: 10px;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
         }
 
-        #fuel {
+        .ufo::before {
+            left: 15px;
+        }
+
+        .ufo::after {
+            left: 45px;
+        }
+
+        .bonusUFO {
+            background-color: yellow;
+        }
+
+        #distance, #fuel {
+            position: absolute;
             top: 10px;
             right: 10px;
+            font-size: 24px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
         }
 
         #message {
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: yellow;
+            text-align: center;
             display: none;
         }
 
         #finalMessage {
-            top: 40%;
+            position: absolute;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 30px;
+            font-size: 48px;
+            color: yellow;
+            text-align: center;
             display: none;
         }
 
-        .star {
+        .explosion {
             position: absolute;
-            width: 2px;
-            height: 2px;
-            background-color: white;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,0,0,1) 0%, rgba(255,165,0,1) 50%, rgba(255,255,0,1) 100%);
+            border-radius: 50%;
+            animation: explode 0.5s forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        @keyframes flicker {
+            0% { height: 40px; opacity: 0.8; }
+            100% { height: 60px; opacity: 0.3; }
         }
     </style>
 </head>
 <body>
+    <div id="rocketContainer"></div>
 
-<div id="rocketContainer"></div>
-
-<script>
-    // Créer des étoiles
-    function createStars() {
+    <script>
         var container = document.getElementById('rocketContainer');
-        for (let i = 0; i < 100; i++) {
-            var star = document.createElement('div');
-            star.className = 'star';
-            star.style.left = Math.random() * window.innerWidth + 'px';
-            star.style.top = Math.random() * window.innerHeight + 'px';
-            container.appendChild(star);
-        }
-    }
+        var distance = 225000000; // Distance à Mars
+        var fuel = 100; // Niveau de carburant
+        var rocketInterval;
+        var gameOver = false;
 
-    createStars();
+        // Affichage de la distance et du fuel
+        var distanceDisplay = document.createElement('div');
+        distanceDisplay.id = 'distance';
+        distanceDisplay.innerText = 'Distance to Mars: ' + distance + ' km';
+        container.appendChild(distanceDisplay);
 
-    // Variables globales
-    var container = document.getElementById('rocketContainer');
-    var distance = 225000000; // Distance à Mars
-    var fuel = 100; // Niveau de carburant (de 0 à 100%)
-    var rocketInterval;
-    var messageCount = 0;
-    var gameOver = false;
+        var fuelDisplay = document.createElement('div');
+        fuelDisplay.id = 'fuel';
+        fuelDisplay.innerText = 'Fuel: ' + fuel + '%';
+        container.appendChild(fuelDisplay);
 
-    var messages = [
-        "You gained 50 km!",
-        "You gained 80 km!",
-        "You gained 100 km!",
-        "You gained 150 km!"
-    ];
+        // Messages spéciaux
+        var messageDisplay = document.createElement('div');
+        messageDisplay.id = 'message';
+        container.appendChild(messageDisplay);
 
-    // Affichage distance
-    var distanceDisplay = document.createElement('div');
-    distanceDisplay.id = 'distance';
-    distanceDisplay.innerText = 'Distance to Mars: 225000000 km';
-    container.appendChild(distanceDisplay);
+        // Message final
+        var finalMessage = document.createElement('div');
+        finalMessage.id = 'finalMessage';
+        finalMessage.innerText = "Game Over! You ran out of fuel.";
+        container.appendChild(finalMessage);
 
-    // Affichage fuel
-    var fuelDisplay = document.createElement('div');
-    fuelDisplay.id = 'fuel';
-    fuelDisplay.innerText = 'Fuel: 100%';
-    container.appendChild(fuelDisplay);
-
-    // Messages spéciaux
-    var messageDisplay = document.createElement('div');
-    messageDisplay.id = 'message';
-    container.appendChild(messageDisplay);
-
-    // Message final
-    var finalMessage = document.createElement('div');
-    finalMessage.id = 'finalMessage';
-    finalMessage.innerText = "Game Over! You ran out of fuel.";
-    container.appendChild(finalMessage);
-
-    // Créer une fusée
-    function createRocket() {
-        if (gameOver) return;
-
-        var rocket = document.createElement('div');
-        rocket.className = 'rocket';
-        container.appendChild(rocket);
-
-        var flame = document.createElement('div');
-        flame.className = 'flame';
-        rocket.appendChild(flame);
-
-        rocket.style.left = Math.random() * (window.innerWidth - 50) + 'px';
-
-        let movement = setInterval(() => {
-            let currentBottom = parseFloat(rocket.style.bottom) || 0;
-            if (currentBottom < window.innerHeight) {
-                rocket.style.bottom = currentBottom + 4 + 'px';
-            } else {
-                clearInterval(movement);
-                container.removeChild(rocket);
-            }
-        }, 50);
-
-        rocket.addEventListener('click', function () {
+        // Créer une fusée
+        function createRocket() {
             if (gameOver) return;
 
-            let kmGained = 50; // Ajout de kilomètres
-            distance -= kmGained;
-            distanceDisplay.innerText = 'Distance to Mars: ' + distance + ' km';
+            var rocket = document.createElement('div');
+            rocket.className = 'rocket';
+            container.appendChild(rocket);
 
-            let randomIndex = Math.floor(Math.random() * messages.length);
-            messageDisplay.innerText = messages[randomIndex];
-            messageDisplay.style.display = 'block';
-            setTimeout(() => {
-                messageDisplay.style.display = 'none';
-            }, 3000);
+            var flame = document.createElement('div');
+            flame.className = 'flame';
+            rocket.appendChild(flame);
 
-            messageCount++;
-            if (messageCount >= 50) {
+            rocket.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+
+            let movement = setInterval(() => {
+                let currentBottom = parseFloat(rocket.style.bottom) || 0;
+                if (currentBottom < window.innerHeight) {
+                    rocket.style.bottom = currentBottom + 4 + 'px';
+                } else {
+                    clearInterval(movement);
+                    container.removeChild(rocket);
+                }
+            }, 50);
+
+            rocket.addEventListener('click', function() {
+                if (gameOver) return;
+
+                distance -= 50;
+                distanceDisplay.innerText = 'Distance to Mars: ' + distance + ' km';
+
+                messageDisplay.innerText = "You gained 50 km!";
+                messageDisplay.style.display = 'block';
                 setTimeout(() => {
+                    messageDisplay.style.display = 'none';
+                }, 3000);
+
+                container.removeChild(rocket);
+            });
+        }
+
+        // Créer une soucoupe volante
+        function createUFO(isBonus = false) {
+            if (gameOver) return;
+
+            var ufo = document.createElement('div');
+            ufo.className = 'ufo';
+            if (isBonus) {
+                ufo.classList.add('bonusUFO');
+            }
+            ufo.style.left = 0;
+            ufo.style.top = Math.random() * (window.innerHeight - 40) + 'px';
+            container.appendChild(ufo);
+
+            let movement = setInterval(() => {
+                let currentLeft = parseFloat(ufo.style.left) || 0;
+                ufo.style.left = currentLeft + 2 + 'px';
+
+                if (currentLeft > window.innerWidth) {
+                    clearInterval(movement);
+                    container.removeChild(ufo);
+                }
+            }, 50);
+
+            ufo.addEventListener('click', function() {
+                if (isBonus) {
+                    fuel = Math.min(fuel + 20, 100); // Augmenter le fuel de 20% sans dépasser 100%
+                } else {
+                    fuel -= 10; // Perte de 10% de fuel si la soucoupe est normale
+                }
+                fuelDisplay.innerText = 'Fuel: ' + fuel + '%';
+
+                container.removeChild(ufo);
+
+                if (fuel <= 0) {
                     finalMessage.style.display = 'block';
                     stopGame();
-                }, 3000);
-            }
-
-            container.removeChild(rocket);
-        });
-    }
-
-    // Créer une soucoupe volante
-    function createUFO(isBonus = false) {
-        if (gameOver) return;
-
-        var ufo = document.createElement('div');
-        ufo.className = 'ufo';
-        ufo.style.top = Math.random() * (window.innerHeight - 40) + 'px'; // Position verticale aléatoire
-        if (isBonus) {
-            ufo.style.backgroundColor = 'green'; // Couleur différente pour la soucoupe bonus
+                }
+            });
         }
-        container.appendChild(ufo);
 
-        let movement = setInterval(() => {
-            let currentLeft = parseFloat(ufo.style.left) || 0;
-            ufo.style.left = currentLeft + 2 + 'px'; // Déplacement constant vers la droite
+        // Arrêter le jeu
+        function stopGame() {
+            clearInterval(rocketInterval);
+            gameOver = true;
+        }
 
-            if (currentLeft > window.innerWidth) {
-                clearInterval(movement);
-                container.removeChild(ufo);
-            }
-        }, 50);
+        // Démarrer le jeu
+        function startGame() {
+            rocketInterval = setInterval(() => {
+                createRocket();
+                if (Math.random() < 0.5) createUFO(Math.random() < 0.2); // Soucoupe volante bonus aléatoire
+            }, 1000);
+        }
 
-        // Ajout de fonctionnalité de bonus ou perte de fuel
-        ufo.addEventListener('click', function () {
-            if (gameOver) return;
-
-            if (isBonus) {
-                fuel = Math.min(fuel + 20, 100); // Augmenter de 20% et limiter à 100%
-            } else {
-                fuel -= 10; // Perdre 10% de carburant
-                if (fuel < 0) fuel = 0; // Limiter à 0%
-            }
-
-            fuelDisplay.innerText = 'Fuel: ' + fuel + '%';
-
-            if (fuel === 0) {
-                finalMessage.style.display = 'block';
-                stopGame();
-            }
-
-            container.removeChild(ufo);
-        });
-    }
-
-    // Arrêter le jeu
-    function stopGame() {
-        clearInterval(rocketInterval);
-        gameOver = true;
-    }
-
-    // Démarrer le jeu
-    function startGame() {
-        rocketInterval = setInterval(() => {
-            createRocket();
-            if (Math.random() < 0.5) createUFO(); // Soucoupe volante normale
-            if (Math.random() < 0.2) createUFO(true); // Soucoupe bonus avec 20% de probabilité
-        }, 1000);
-    }
-
-    createStars();
-    startGame();
-</script>
-
+        startGame();
+    </script>
 </body>
 </html>
